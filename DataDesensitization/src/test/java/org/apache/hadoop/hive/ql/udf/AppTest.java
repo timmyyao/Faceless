@@ -1,10 +1,16 @@
 package org.apache.hadoop.hive.ql.udf;
 
+import java.sql.Timestamp;
+import java.time.LocalTime;
+import java.util.HashMap;
+import java.util.Random;
+import javax.crypto.*;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.hive.serde2.io.TimestampWritable;
 
 import java.util.Arrays;
 
@@ -126,5 +132,217 @@ public class AppTest
         Text tag = new Text("*");
         Text result = test.evaluate(data,start,end,tag);
         result.set("hello");
+    }
+
+    public void testUDFPhone() {
+        UDFPhone phone = new UDFPhone();
+        Text text = new Text("021-123456");
+
+        IntWritable mask = new IntWritable(1);
+        Text mText = phone.evaluate(text, mask);
+        if (false == mText.equals(new Text("021"))) {
+          System.out.printf("testUDFPhone() has failed! text=%s, masked_text=%s, mask=%d\n",
+              text.toString(), mText.toString(), mask.get());
+        }
+
+        IntWritable mask2 = new IntWritable(2);
+        Text mText2 = phone.evaluate(text, mask2);
+        if (false == mText2.equals(new Text("123456"))) {
+          System.out.printf("testUDFPhone() has failed! text=%s, masked_text=%s, mask=%d\n",
+              text.toString(), mText2.toString(), mask2.get());
+        }
+    }
+
+    public void testUDFMoblie() {
+        UDFMobile mobile = new UDFMobile();
+        Text text = new Text("13834566543");
+
+        IntWritable mask = new IntWritable(2);
+        Text mText = mobile.evaluate(text, mask);
+        if (false == mText.equals(new Text("138****6543"))) {
+          System.out.printf("testUDFMobile() has failed! text=%s, masked_text=%s, mask=%d\n",
+              text.toString(), mText.toString(), mask.get());
+        }
+
+        IntWritable mask2 = new IntWritable(4);
+        Text mText2 = mobile.evaluate(text, mask2);
+        if (false == mText2.equals(new Text("***34566543"))) {
+          System.out.printf("testUDFMobile() has failed! text=%s, masked_text=%s, mask=%d\n",
+              text.toString(), mText2.toString(), mask2.get());
+        }
+
+        IntWritable mask3 = new IntWritable(5);
+        Text mText3 = mobile.evaluate(text, mask3);
+        if (false == mText3.equals(new Text("***3456****"))) {
+          System.out.printf("testUDFMobile() has failed! text=%s, masked_text=%s, mask=%d\n",
+              text.toString(), mText3.toString(), mask3.get());
+        }
+    }
+
+    public void testUDFEmail() {
+        UDFEmail email = new UDFEmail();
+        Text text = new Text("test@163.com");
+
+        IntWritable mask = new IntWritable(1);
+        Text mText = email.evaluate(text, mask);
+        if (false == mText.equals(new Text("test"))) {
+          System.out.printf("testUDFEmail() has failed! text=%s, masked_text=%s, mask=%d\n",
+              text.toString(), mText.toString(), mask.get());
+        }
+
+        IntWritable mask2 = new IntWritable(2);
+        Text mText2 = email.evaluate(text, mask2);
+        if (false == mText2.equals(new Text("163.com"))) {
+          System.out.printf("testUDFEmail() has failed! text=%s, masked_text=%s, mask=%d\n",
+              text.toString(), mText2.toString(), mask2.get());
+        }
+    }
+
+    public void testUDFIP() {
+        UDFIP ip = new UDFIP();
+        Text text = new Text("255.255.106.10");
+
+        IntWritable mask = new IntWritable(9);
+        Text mText = ip.evaluate(text, mask);
+        if (false == mText.equals(new Text("0.255.106.0"))) {
+          System.out.printf("testUDFIP() has failed! text=%s, masked_text=%s, mask=%d\n",
+              text.toString(), mText.toString(), mask.get());
+        }
+
+        IntWritable mask2 = new IntWritable(15);
+        Text mText2 = ip.evaluate(text, mask2);
+        if (false == mText2.equals(new Text("0.0.0.0"))) {
+          System.out.printf("testUDFIP() has failed! text=%s, masked_text=%s, mask=%d\n",
+              text.toString(), mText2.toString(), mask2.get());
+        }
+    }
+
+    public void testUDFTimestamp() {
+        UDFTimestamp ts = new UDFTimestamp();
+        Timestamp time = Timestamp.valueOf("2016-07-20 21:42:00");
+        TimestampWritable text = new TimestampWritable(time);
+
+        IntWritable mask = new IntWritable(7);
+        TimestampWritable mText = ts.evaluate(text, mask);
+        if (false ==
+            mText.equals(new TimestampWritable(Timestamp.valueOf("2016-07-20 00:00:00")))) {
+          System.out.printf("testUDFTimestamp() has failed! text=%s, masked_text=%s, mask=%d\n",
+              text.toString(), mText.toString(), mask.get());
+        }
+
+        IntWritable mask2 = new IntWritable(15);
+        TimestampWritable mText2 = ts.evaluate(text, mask2);
+        if (false ==
+            mText2.equals(new TimestampWritable(Timestamp.valueOf("2016-07-01 00:00:00")))) {
+          System.out.printf("testUDFTimestamp() has failed! text=%s, masked_text=%s, mask=%d\n",
+              text.toString(), mText2.toString(), mask2.get());
+        }
+
+        IntWritable mask3 = new IntWritable(56);
+        TimestampWritable mText3 = ts.evaluate(text, mask3);
+        if (false ==
+            mText3.equals(new TimestampWritable(Timestamp.valueOf("1960-01-01 21:42:00")))) {
+          System.out.printf("testUDFTimestamp() has failed! text=%s, masked_text=%s, mask=%d\n",
+              text.toString(), mText3.toString(), mask3.get());
+        }
+
+        IntWritable mask4 = new IntWritable(63);
+        TimestampWritable mText4 = ts.evaluate(text, mask4);
+        if (false ==
+            mText4.equals(new TimestampWritable(Timestamp.valueOf("1960-01-01 00:00:00")))) {
+          System.out.printf("testUDFTimestamp() has failed! text=%s, masked_text=%s, mask=%d\n",
+              text.toString(), mText4.toString(), mask4.get());
+        }
+    }
+
+    public void testUDFHash() {
+        UDFHash hash = new UDFHash();
+        Random rand = new Random();
+        byte[] str = new byte[100];
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < 100; i++) {
+            rand.nextBytes(str);
+            for (byte b : str) sb.append(b);
+            Text test = new Text(sb.toString());
+            sb.delete(0, sb.length() - 1);
+            //System.out.println(hash.evaluate(test));
+            hash.evaluate(test);
+        }
+    }
+
+    public void testUDFUIdentifier() {
+        System.out.println("----------- UDFUIdentifier Test ------------");
+        UDFUIdentifier uid = new UDFUIdentifier();
+        Text text = new Text("rdfuhwqehfihasdihgiauhs");
+        Text text2 = new Text("sdfuhwqehfihasdihgiauhs");
+        Text result = uid.evaluate(text, 0);
+
+        Text result2 = uid.evaluate(text);
+        Text result3 = uid.evaluate(text2);
+        Text result4 = uid.evaluate(text, "MD5");
+
+        HashMap<String, Text> items = new HashMap<String, Text>();
+        Random rand = new Random();
+        byte[] str = new byte[100];
+        int item_len = 100000;
+        StringBuilder sb = new StringBuilder();
+        LocalTime st, et;
+        System.out.println("----------- test one ---------------");
+        st = LocalTime.now();
+        for (int i = 0; i < item_len; i++) {
+            //Text test = new Text("rdfuhwqehfihasdihgiauhs" + i);
+            rand.nextBytes(str);
+            for (byte b : str) sb.append(b);
+            Text test = new Text(sb.toString());
+            sb.delete(0, sb.length() - 1);
+            items.put(uid.evaluate(test).toString(), test);
+        }
+        et = LocalTime.now();
+        System.out.println("item_len = " + item_len + ", map_size = " + items.size());
+        System.out.println("[total time]: " + (et.toSecondOfDay() - st.toSecondOfDay()) + "s");
+
+        System.out.println("----------- test two ---------------");
+        items.clear();
+        st = LocalTime.now();
+        for (int i = 0; i < item_len; i++) {
+            // Text test = new Text("rdfuhwqehfihasdihgiauhs" + i);
+            rand.nextBytes(str);
+            for (byte b : str) sb.append(b);
+            Text test = new Text(sb.toString());
+            sb.delete(0, sb.length() - 1);
+            items.put(uid.evaluate(test, 0).toString(), test);
+        }
+        et = LocalTime.now();
+        System.out.println("item_len = " + item_len + ", map_size = " + items.size());
+        System.out.println("[total time]: " + (et.toSecondOfDay() - st.toSecondOfDay()) + "s");
+
+        System.out.println("----------- test three ---------------");
+        items.clear();
+        st = LocalTime.now();
+        for (int i = 0; i < item_len; i++) {
+            // Text test = new Text("rdfuhwqehfihasdihgiauhs" + i);
+            rand.nextBytes(str);
+            for (byte b : str) sb.append(b);
+            Text test = new Text(sb.toString());
+            sb.delete(0, sb.length() - 1);
+            items.put(uid.evaluate(test, "MD5").toString(), test);
+        }
+        et = LocalTime.now();
+        System.out.println("item_len = " + item_len + ", map_size = " + items.size());
+        System.out.println("[total time]: " + (et.toSecondOfDay() - st.toSecondOfDay()) + "s");
+    }
+
+    public void testUDFCipher() {
+        System.out.println("----------- UDFCipher Test ------------");
+        UDFCipher cipher = new UDFCipher();
+        Text text = new Text("This is a test. If you can see the message after decrypted, then it's OK!");
+        System.out.println("Before encrypt : " + text);
+        Text result = cipher.evaluate(text, Cipher.ENCRYPT_MODE);
+        //System.out.println("After encrypted : " + result);
+
+        //Text deresult = new Text(cipher.decryptAES(cipher.encryptAES(text.getBytes())));
+        Text deresult = cipher.evaluate(result, Cipher.DECRYPT_MODE);
+        //System.out.println("After decrypted : " + deresult);
     }
 }
