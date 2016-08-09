@@ -1,5 +1,9 @@
 package org.apache.hadoop.hive.ql.udf;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
@@ -9,12 +13,17 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector.PrimitiveCategory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.JavaStringObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.WritableIntObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ReflectionStructObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.StandardMapObjectInspector;
+import org.apache.hadoop.hive.serde2.lazybinary.objectinspector.LazyBinaryStructObjectInspector;
+import org.apache.hadoop.hive.serde2.lazybinary.LazyBinaryStruct;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.IntWritable;
-
-import java.util.HashMap;
-import java.util.Map;
+import org.apache.hadoop.io.Text;
 
 /**
  * Created by root on 7/19/16.
@@ -37,25 +46,28 @@ public class GenericUDAFKAnonymity extends AbstractGenericUDAFResolver {
 
 
   public static class GenericUDAFKAnonymityEvaluator extends GenericUDAFEvaluator {
-
     private IntWritable result;
 
-    /** class for storing a length-variable input*/
-    static class KeyObj {
-      private Object[] values;
-      private int num;
+    private ObjectInspector inputKeyOI;
+    private ObjectInspector inputValueOI;
 
-      public KeyObj() {
-        values = null;
-        num = 0;
+    private StandardMapObjectInspector internalMergeOI;
+    private StandardMapObjectInspector mergeOI;
+
+    static class StringRowInfo {
+      private String row_;
+      private int count_ = 0;
+
+      public StringRowInfo(String code) {
+        count_ = 1;
+        row_ = code;
       }
 
-      public KeyObj(Object[] parameters) {
-        num = parameters.length;
-        values = new Object[num];
-        for (int i = 0; i < num; i++) {
-          values[i] = parameters[i];
-        }
+      @Override
+      public int hashCode() {
+        int hash = 0;
+        hash = row_.hashCode();
+        return hash;
       }
 
       @Override
@@ -66,75 +78,111 @@ public class GenericUDAFKAnonymity extends AbstractGenericUDAFResolver {
         if(obj == null || getClass() != obj.getClass()) {
           return false;
         }
-        KeyObj keyObj = (KeyObj) obj;
-        if(num != keyObj.num) return false;
-        for(int i = 0; i < num; i++) {
-          if(values[i] != null ? !values[i].equals(keyObj.values[i]) : keyObj.values[i] != null) {
-            return false;
-          }
-        }
+        StringRowInfo row = (StringRowInfo) obj;
+        if(!row_.equals(row.row_)) return false;
         return true;
       }
 
-      @Override
-      public int hashCode() {
-        int hash = 0;
-        for(int i = 0; i < num; i++) {
-          hash += values[i].hashCode();
-        }
-        return hash;
+      public String getRow() {
+        return row_;
       }
+
+      public Integer getCount() {
+        return count_;
+      }
+
+      void setCount(Integer count) {
+        this.count_ = count;
+      }
+
+      public void increase(Integer cnt) {
+        this.count_ += cnt;
+      }
+
     }
 
     /** init not completed */
     @Override
     public ObjectInspector init(Mode m, ObjectInspector[] parameters) throws HiveException {
       super.init(m, parameters);
-      System.out.println("init"+m);
+      /*
+       * In partial1, parameters are the inspectors of resultant columns produced by a sql.
+       */
 
-      if(m == Mode.COMPLETE || m == Mode.FINAL) {
-        System.out.println("init end");
-        return PrimitiveObjectInspectorFactory.writableIntObjectInspector;
-      }
-      else {
-        System.out.println("init end");
-        //return PrimitiveObjectInspectorFactory.writableIntObjectInspector;
-        return ObjectInspectorFactory.getReflectionObjectInspector(Map.class, ObjectInspectorFactory.ObjectInspectorOptions.JAVA);
+      if (m == Mode.PARTIAL1 || m == Mode.PARTIAL2) {
+        inputKeyOI =
+            (JavaStringObjectInspector) ObjectInspectorFactory.getReflectionObjectInspector(String.class, ObjectInspectorFactory.ObjectInspectorOptions.JAVA);
+
+        inputValueOI = ObjectInspectorFactory.getReflectionObjectInspector(StringRowInfo.class, ObjectInspectorFactory.ObjectInspectorOptions.JAVA);
+        return ObjectInspectorFactory.getStandardMapObjectInspector(ObjectInspectorUtils.getStandardObjectInspector(inputKeyOI),
+            inputValueOI);
+      } else {
+        if(m == Mode.COMPLETE) {
+          return PrimitiveObjectInspectorFactory.writableIntObjectInspector;
+        } else {
+          if (parameters.length > 1) throw new UDFArgumentException("init parameters are incorrect");
+          if (!(parameters[0] instanceof StandardMapObjectInspector)) {
+            throw new UDFArgumentException("For merge init error: parameter is not a standard map object inspector!");
+          }
+
+          internalMergeOI = (StandardMapObjectInspector) parameters[0];
+
+          inputKeyOI = ObjectInspectorUtils.getStandardObjectInspector(internalMergeOI.getMapKeyObjectInspector());
+          inputValueOI = internalMergeOI.getMapValueObjectInspector();
+
+          mergeOI = (StandardMapObjectInspector) ObjectInspectorUtils.getStandardObjectInspector(internalMergeOI);
+
+          return ObjectInspectorFactory.getReflectionObjectInspector(StringRowInfo.class, ObjectInspectorFactory.ObjectInspectorOptions.JAVA);
+        }
       }
     }
 
     /** class for storing frequency of different inputs. */
     @AggregationType
     static class FreqTable extends AbstractAggregationBuffer {
-      Map<KeyObj,Integer> freqMap;
-      /**
-       * renew the <key,value> in map, if key exists, value++, else value = 1
-       */
-      void put(Object[] key) {
-        KeyObj keyObj = new KeyObj(key);
-        Integer v = freqMap.get(keyObj);
-        if(v == null) {
-          freqMap.put(keyObj,1);
+      //HashMap<Integer, StringRowInfo> freqMap;
+      HashMap<String, StringRowInfo> freqMap;
+
+      void put(Object[] values) {
+        String str = "";
+        for (Object o : values) {
+          str += o;
         }
-        else {
-          freqMap.put(keyObj,v + 1);
+
+        // generate an unique identifier for one row
+        UDFUIdentifier uid = new UDFUIdentifier();
+        Text txt = uid.evaluate(new Text(str), 0);
+        String code = txt.toString();
+
+        StringRowInfo sri = new StringRowInfo(code);
+        StringRowInfo v = freqMap.get(sri.getRow());
+        if(v == null) {
+          sri.setCount(1);
+          freqMap.put(sri.getRow(), sri);
+        } else {
+          sri.increase(v.getCount());
+          freqMap.put(sri.getRow(), sri);
         }
       }
+
       /**
-       * return the minimal value in map
+       * return the last minimal frequent value in map
        */
-      Integer min() {
-        int result = Integer.MAX_VALUE;
+      StringRowInfo min() {
+        int min = Integer.MAX_VALUE;
         if(freqMap.size() == 0) {
           return null;
         }
-        for(Integer value : freqMap.values()) {
-          if(value.intValue() < result) {
-            result = value.intValue();
+        StringRowInfo result = null;
+        for(StringRowInfo value : freqMap.values()) {
+          if(value.getCount() < min) {
+            min = value.getCount();
+            result = value;
           }
         }
-        return result;
+        return result == null ? null : result;
       }
+
     }
 
     @Override
@@ -146,47 +194,59 @@ public class GenericUDAFKAnonymity extends AbstractGenericUDAFResolver {
 
     @Override
     public void reset(AggregationBuffer agg) throws HiveException {
-      ((FreqTable)agg).freqMap = new HashMap<KeyObj,Integer>();
+      //((FreqTable) agg).freqMap = new HashMap<Integer, StringRowInfo>();
+      ((FreqTable) agg).freqMap = new HashMap<String, StringRowInfo>();
     }
 
     @Override
     public void iterate(AggregationBuffer agg, Object[] parameters) throws HiveException {
-      ((FreqTable)agg).put(parameters);
-      for(int i = 0; i < parameters.length; i++) {
-        System.out.println("iterate:"+parameters[i]);
-      }
-      System.out.println(((FreqTable)agg).freqMap.size());
+      ((FreqTable) agg).put(parameters);
     }
 
     @Override
     public Object terminatePartial(AggregationBuffer agg) throws HiveException {
-      System.out.println("terminatePartial:"+((FreqTable)agg).freqMap.size());
+      FreqTable ft = (FreqTable) agg;
+      HashMap<String, StringRowInfo> ret = new HashMap<String, StringRowInfo>(ft.freqMap);
 
-      return agg;
+      return ret;
     }
 
-    /** merge not completed*/
+    /** NOTE: LazyBinaryMap's key object must be a wrtiable primitive objects*/
     @Override
     public void merge(AggregationBuffer agg, Object partial) throws HiveException {
-      System.out.println("merge1");
-      //Map mypartial = (Map)partial;
-      System.out.println("merge2");
-      System.out.println("merge3:"+((FreqTable)agg).freqMap.size());
+      HashMap<Object, Object> result = (HashMap<Object, Object>) internalMergeOI.getMap(partial);
+      FreqTable ft = (FreqTable) agg;
+
+      for (Entry<Object, Object> e : result.entrySet()) {
+
+        Text rowTxt = (Text)((LazyBinaryStruct)e.getValue()).getField(0);
+        String row = rowTxt.toString();
+        IntWritable count = (IntWritable)((LazyBinaryStruct)e.getValue()).getField(1);
+
+        StringRowInfo sri = new StringRowInfo(row);
+        sri.setCount(count.get());
+
+        // merge all the patial maps
+        if (ft.freqMap.containsKey(sri.getRow())) {
+            StringRowInfo base = ft.freqMap.get(sri.getRow());
+            sri.increase(base.getCount());
+            ft.freqMap.put(sri.getRow(), sri);
+        } else {
+            ft.freqMap.put(sri.getRow(), sri);
+        }
+      }
     }
 
     @Override
     public Object terminate(AggregationBuffer agg) throws HiveException {
-      System.out.println("terminate");
-      Integer minValue = ((FreqTable)agg).min();
+      StringRowInfo minValue = ((FreqTable)agg).min();
       if(minValue == null) {
-        System.out.println("terminate: null");
         return null;
-      }
-      else {
-        result = new IntWritable(minValue);
-        System.out.println("terminate:" + ((FreqTable) agg).freqMap.size());
-        return result;
+      } else {
+        return minValue;
       }
     }
+
   }
+
 }
