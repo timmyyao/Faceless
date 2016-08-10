@@ -11,10 +11,10 @@ import java.util.Arrays;
  * UDFMask.
  */
 @Description(name = "mask",
-        value = "_FUNC_(data,start,end,tag) - replace the sub-text from start to end with 'tag'"
-                + "which must be one single character\n"
+        value = "_FUNC_(data,start,end,tag) - replace the sub-text of 'data' from start to end with 'tag'\n"
                 + "start - start position (sequence count from 1)\n"
-                + "end - end position (end >= start)",
+                + "end - end position (end >= start)\n"
+                + "tag - the signal to replace the sub-text which must be one single character",
         extended = "Example:\n")
 public class UDFMask extends UDF{
   private final Text result = new Text();
@@ -38,29 +38,31 @@ public class UDFMask extends UDF{
       return null;
     }
     // returns entire data when the period [start,end] exceeds the scope of 'data'
-    if(startVal > data.getLength() || endVal < 1) {
+    if(startVal > dataStr.length() || endVal < 1) {
       result.set(data);
       return result;
     }
     // returns expected result: combine head, maskStr and tail
     String head = new String();
     String tail = new String();
-    if(startVal > 1) {
+    String maskStr;
+    if (startVal > 1) {
       head = dataStr.substring(0, startVal - 1);
     }
     else {
       startVal = 1;
     }
-    if(endVal < dataStr.length()) {
+    if (endVal < dataStr.length()) {
       tail = data.toString().substring(endVal, dataStr.length());
     }
     else {
       endVal = dataStr.length();
     }
     char[] mask = new char[endVal - startVal + 1];
-    Arrays.fill(mask,ch);
-    String maskStr = new String(mask);
+    Arrays.fill(mask, ch);
+    maskStr = new String(mask);
     result.set(head + maskStr + tail);
+
     return result;
   }
 }

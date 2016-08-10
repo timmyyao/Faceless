@@ -18,7 +18,8 @@ import org.apache.hadoop.io.Text;
  *
  */
 @Description(name = "encrytion",
-             value = "_FUNC_(x) - returns the encrypted data string of x",
+             value = "_FUNC_(x,mode) - returns the encrypted data string of x\n"
+                     + "mode - 1 : encryption, 2 : decryption",
              extended = "Example:\n")
 public class UDFCipher extends UDF {
     private static SecureRandom rand = new SecureRandom();

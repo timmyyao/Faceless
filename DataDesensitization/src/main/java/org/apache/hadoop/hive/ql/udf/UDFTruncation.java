@@ -10,7 +10,7 @@ import org.apache.hadoop.io.Text;
  */
 @Description(name = "truncation",
         value = "_FUNC_(data,length,mode) - returns a sub-Text with 'length' digits\n"
-                + "mode - truncation method: 0 for reserving the first half, 1 for reserving the second half\n",
+                + "mode - truncation method (0 for reserving the first half, 1 for reserving the second half)\n",
         extended = "Example:\n")
 public class UDFTruncation extends UDF{
   private final Text result = new Text();
@@ -24,7 +24,7 @@ public class UDFTruncation extends UDF{
     int lengthVal = length.get();
     int modeVal = mode.get();
     // returns null when the value of 'mode' or 'length' is invalid
-    if(modeVal != 0 && modeVal != 1 || lengthVal <= 0) {
+    if(modeVal != 0 && modeVal != 1 || lengthVal < 0) {
       return null;
     }
     // returns entire data when 'length' exceeds the length of data
