@@ -2,6 +2,7 @@ package org.apache.hadoop.hive.ql.udf;
 
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDF;
+import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 
@@ -21,21 +22,21 @@ public class UDFMask extends UDF{
 
   public Text evaluate(Text data, IntWritable start, IntWritable end, Text tag) {
     // returns null when input is null
-    if(data == null || start == null || end == null || tag == null){
+    if(data == null){
       return null;
     }
-    // returns null when 'tag' is invalid (not one single character)
-	String dataStr = data.toString();
-	String tagStr = tag.toString();
+    // throw exception when 'tag' is invalid (not one single character)
+    String dataStr = data.toString();
+    String tagStr = tag.toString();
     if(tagStr.length() != 1) {
-      return null;
+      throw new RuntimeException("tag must be one single character");
     }
     char ch = tagStr.charAt(0);
     int startVal = start.get();
     int endVal = end.get();
-    // returns null if 'startVal' or 'endVal' is invalid (startVal > endVal)
+    // throw exception if 'startVal' or 'endVal' is invalid (startVal > endVal)
     if(startVal > endVal) {
-      return null;
+      throw new RuntimeException("start must <= end");
     }
     // returns entire data when the period [start,end] exceeds the scope of 'data'
     if(startVal > dataStr.length() || endVal < 1) {

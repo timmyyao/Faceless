@@ -17,15 +17,18 @@ public class UDFTruncation extends UDF{
 
   public Text evaluate(Text data, IntWritable length, IntWritable mode) {
     // returns null when input is null
-    if(data == null || length == null || mode == null) {
+    if(data == null) {
       return null;
     }
     String dataStr = data.toString();
     int lengthVal = length.get();
     int modeVal = mode.get();
     // returns null when the value of 'mode' or 'length' is invalid
-    if(modeVal != 0 && modeVal != 1 || lengthVal < 0) {
-      return null;
+    if(modeVal != 0 && modeVal != 1) {
+      throw new RuntimeException("mode must be 0 or 1");
+    }
+    if(lengthVal < 0) {
+      throw new RuntimeException("length must be a positive integer");
     }
     // returns entire data when 'length' exceeds the length of data
     if(lengthVal >= dataStr.length()) {

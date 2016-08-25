@@ -14,8 +14,8 @@ import org.apache.hadoop.io.LongWritable;
         value = "_FUNC_(data,direction,digit,mode) - shift 'data' \n"
                 + "direction - 0 for right, 1 for left\n"
                 + "digit - number of digits for shifting"
-                + "mode - 0: fill 0 for left shift and unsigned shift for right shift;"
-                + "1: fill 1 for left shift and signed shift for right shift",
+                + "mode - 0: fill 0 for left shift (direction = 1) and unsigned shift for right shift (direction = 0);"
+                + "1: fill 1 for left shift (direction = 1) and signed shift for right shift (direction = 0)",
         extended = "Example:\n")
 public class UDFShift extends UDF {
   private int evaluate(int data, int direction, int digit, int mode) {
@@ -72,17 +72,23 @@ public class UDFShift extends UDF {
    * Integer version
    */
   public IntWritable evaluate(IntWritable data, IntWritable direction, IntWritable digit, IntWritable mode) {
-    if(data == null || direction == null || digit == null || mode == null) {
+    if(data == null) {
       return null;
     }
     int dataVal = data.get();
     int directionVal = direction.get();
     int digitVal = digit.get();
     int modeVal = mode.get();
-    if(directionVal != 0 && directionVal != 1 || modeVal != 0 && modeVal != 1) {
-      return null;
+    if(directionVal != 0 && directionVal != 1) {
+      throw new RuntimeException("direction must be 0 or 1");
+    }
+    if(modeVal != 0 && modeVal != 1) {
+      throw new RuntimeException("mode must be 0 or 1");
     }
     IntWritable result = new IntWritable();
+    if(digitVal >= 32 || digitVal < 0) {
+      throw new RuntimeException("digit must between 0 and 31 for Integer input");
+    }
     result.set(evaluate(dataVal,directionVal,digitVal,modeVal));
     return result;
   }
@@ -91,17 +97,23 @@ public class UDFShift extends UDF {
    * Long version
    */
   public LongWritable evaluate(LongWritable data, IntWritable direction, IntWritable digit, IntWritable mode) {
-    if(data == null || direction == null || digit == null || mode == null) {
+    if(data == null) {
       return null;
     }
     long dataVal = data.get();
     int directionVal = direction.get();
     int digitVal = digit.get();
     int modeVal = mode.get();
-    if(directionVal != 0 && directionVal != 1 || modeVal != 0 && modeVal != 1) {
-      return null;
+    if(directionVal != 0 && directionVal != 1) {
+      throw new RuntimeException("direction must be 0 or 1");
+    }
+    if(modeVal != 0 && modeVal != 1) {
+      throw new RuntimeException("mode must be 0 or 1");
     }
     LongWritable result = new LongWritable();
+    if(digitVal >= 64 || digitVal < 0) {
+      throw new RuntimeException("digit must between 0 and 63 for Long input");
+    }
     result.set(evaluate(dataVal,directionVal,digitVal,modeVal));
     return result;
   }
@@ -110,19 +122,23 @@ public class UDFShift extends UDF {
    * Short version
    */
   public ShortWritable evaluate(ShortWritable data, IntWritable direction, IntWritable digit, IntWritable mode) {
-    if(data == null || direction == null || digit == null || mode == null) {
+    if(data == null) {
       return null;
     }
     int dataVal = data.get();
     int directionVal = direction.get();
     int digitVal = digit.get();
     int modeVal = mode.get();
-    if(directionVal != 0 && directionVal != 1 || modeVal != 0 && modeVal != 1) {
-      return null;
+    if(directionVal != 0 && directionVal != 1) {
+      throw new RuntimeException("direction must be 0 or 1");
+    }
+    if(modeVal != 0 && modeVal != 1) {
+      throw new RuntimeException("mode must be 0 or 1");
     }
     ShortWritable result = new ShortWritable();
-    // get 4 digits from LSB (for short type has 2^4 digits)
-    digitVal = digitVal & (1 << 4 - 1);
+    if(digitVal >= 16 || digitVal < 0) {
+      throw new RuntimeException("digit must between 0 and 15 for Short input");
+    }
     result.set((short)evaluate(dataVal,directionVal,digitVal,modeVal));
     return result;
   }
@@ -131,19 +147,23 @@ public class UDFShift extends UDF {
    * Byte version
    */
   public ByteWritable evaluate(ByteWritable data, IntWritable direction, IntWritable digit, IntWritable mode) {
-    if(data == null || direction == null || digit == null || mode == null) {
+    if(data == null) {
       return null;
     }
     int dataVal = data.get();
     int directionVal = direction.get();
     int digitVal = digit.get();
     int modeVal = mode.get();
-    if(directionVal != 0 && directionVal != 1 || modeVal != 0 && modeVal != 1) {
-      return null;
+    if(directionVal != 0 && directionVal != 1) {
+      throw new RuntimeException("direction must be 0 or 1");
+    }
+    if(modeVal != 0 && modeVal != 1) {
+      throw new RuntimeException("mode must be 0 or 1");
     }
     ByteWritable result = new ByteWritable();
-    // get 3 digits from LSB (for byte type has 2^3 digits)
-    digitVal = digitVal & (1 << 3 - 1);
+    if(digitVal >= 8 || digitVal < 0) {
+      throw new RuntimeException("digit must between 0 and 7 for Byte input");
+    }
     result.set((byte)evaluate(dataVal,directionVal,digitVal,modeVal));
     return result;
   }

@@ -31,7 +31,7 @@ public class UDFAge extends UDF{
    * Integer version
    */
   public IntWritable evaluate(IntWritable age, IntWritable mode, IntWritable unit) {
-    if (age == null || mode == null || unit == null) {
+    if (age == null) {
       return null;
     }
     double ageVal = age.get();
@@ -39,10 +39,10 @@ public class UDFAge extends UDF{
     int unitVal = unit.get();
     IntWritable result = new IntWritable();
     if (modeVal != 0 && modeVal != 1) {
-      return null;
+      throw new RuntimeException("mode must be 0 or 1");
     }
     if (unitVal <= 0) {
-      return null;
+      throw new RuntimeException("unit must be a positive integer");
     }
     // calculate the result in double type
     double resultDouble = evaluate(ageVal,modeVal,unitVal);
@@ -63,7 +63,7 @@ public class UDFAge extends UDF{
    * Byte version
    */
   public ByteWritable evaluate(ByteWritable age, IntWritable mode, IntWritable unit) {
-    if (age == null || mode == null || unit == null) {
+    if (age == null) {
       return null;
     }
     double ageVal = age.get();
@@ -71,10 +71,10 @@ public class UDFAge extends UDF{
     int unitVal = unit.get();
     ByteWritable result = new ByteWritable();
     if (modeVal != 0 && modeVal != 1) {
-      return null;
+      throw new RuntimeException("mode must be 0 or 1");
     }
     if (unitVal <= 0) {
-      return null;
+      throw new RuntimeException("unit must be a positive integer");
     }
     // calculate the result in double type
     double resultDouble = evaluate(ageVal,modeVal,unitVal);
@@ -95,7 +95,7 @@ public class UDFAge extends UDF{
    * Long version
    */
   public LongWritable evaluate(LongWritable age, IntWritable mode, IntWritable unit) {
-    if (age == null || mode == null || unit == null) {
+    if (age == null) {
       return null;
     }
     double ageVal = age.get();
@@ -103,10 +103,10 @@ public class UDFAge extends UDF{
     int unitVal = unit.get();
     LongWritable result = new LongWritable();
     if (modeVal != 0 && modeVal != 1) {
-      return null;
+      throw new RuntimeException("mode must be 0 or 1");
     }
     if (unitVal <= 0) {
-      return null;
+      throw new RuntimeException("unit must be a positive integer");
     }
     // calculate the result in double type
     double resultDouble = evaluate(ageVal,modeVal,unitVal);
@@ -127,7 +127,7 @@ public class UDFAge extends UDF{
    * Short version
    */
   public ShortWritable evaluate(ShortWritable age, IntWritable mode, IntWritable unit) {
-    if (age == null || mode == null || unit == null) {
+    if (age == null) {
       return null;
     }
     double ageVal = age.get();
@@ -135,10 +135,10 @@ public class UDFAge extends UDF{
     int unitVal = unit.get();
     ShortWritable result = new ShortWritable();
     if (modeVal != 0 && modeVal != 1) {
-      return null;
+      throw new RuntimeException("mode must be 0 or 1");
     }
     if (unitVal <= 0) {
-      return null;
+      throw new RuntimeException("unit must be a positive integer");
     }
     // calculate the result in double type
     double resultDouble = evaluate(ageVal,modeVal,unitVal);
