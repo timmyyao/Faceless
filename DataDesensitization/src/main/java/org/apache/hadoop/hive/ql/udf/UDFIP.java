@@ -21,7 +21,9 @@ public class UDFIP extends UDF {
     char [] cMask = sMask.toCharArray();
     String [] subs = ip.split("\\.");
 
-    if (subs.length < cMask.length) return ip;
+    if (subs.length < cMask.length) {
+      throw new RuntimeException("Please input correct mask code!");
+    }
     int distance = subs.length - cMask.length;
 
     for (int i = 0; i < cMask.length; i++) {

@@ -338,11 +338,12 @@ public class AppTest
         UDFCipher cipher = new UDFCipher();
         Text text = new Text("This is a test. If you can see the message after decrypted, then it's OK!");
         System.out.println("Before encrypt : " + text);
-        Text result = cipher.evaluate(text, Cipher.ENCRYPT_MODE);
-        //System.out.println("After encrypted : " + result);
+        Text key = new Text("abcdefghijklmnop");
+        // encryption
+        Text result = cipher.evaluate(text, Cipher.ENCRYPT_MODE, key);
 
-        //Text deresult = new Text(cipher.decryptAES(cipher.encryptAES(text.getBytes())));
-        Text deresult = cipher.evaluate(result, Cipher.DECRYPT_MODE);
-        //System.out.println("After decrypted : " + deresult);
+        // decryption
+        Text deresult = cipher.evaluate(result, Cipher.DECRYPT_MODE, key);
     }
+
 }

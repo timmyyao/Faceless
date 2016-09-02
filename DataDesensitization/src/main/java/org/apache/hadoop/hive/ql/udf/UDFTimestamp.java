@@ -17,7 +17,6 @@ import org.apache.hadoop.io.IntWritable;
                 + "mask - hide the date components or the time components, 1 masked, 0 unmasked",
              extended = "Example:\n")
 public class UDFTimestamp extends UDF {
-
   // Timestamp type limits month in 00~11
   public static final String[] DATE = {"1960","01","01"};
 
@@ -26,11 +25,11 @@ public class UDFTimestamp extends UDF {
     char [] cMask = sMask.toCharArray();
     String [] date_time = timestamp.split("\\x20|-|:");
 
-    if (date_time.length < cMask.length) return timestamp;
-    int distance = date_time.length - cMask.length;
+    if (date_time.length < cMask.length) {
+      throw new RuntimeException("Please input correct mask code!");
+    }
 
-    String[] date_subs = new String[3];
-    String[] time_subs = new String[3];
+    int distance = date_time.length - cMask.length;
     for (int i = 0; i < cMask.length; i++) {
       if (cMask[i] == '1') {
         if (distance + i < 3) {

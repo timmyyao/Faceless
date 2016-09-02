@@ -1,8 +1,11 @@
 package org.apache.hadoop.hive.ql.udf;
 
+import java.lang.StringBuilder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.List;
+import java.util.ArrayList;
 
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
@@ -20,7 +23,9 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.WritableIntObject
 import org.apache.hadoop.hive.serde2.objectinspector.ReflectionStructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StandardMapObjectInspector;
 import org.apache.hadoop.hive.serde2.lazybinary.objectinspector.LazyBinaryStructObjectInspector;
+import org.apache.hadoop.hive.serde2.lazybinary.LazyBinaryMap;
 import org.apache.hadoop.hive.serde2.lazybinary.LazyBinaryStruct;
+import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
@@ -28,24 +33,31 @@ import org.apache.hadoop.io.Text;
 /**
  * Created by root on 7/19/16.
  */
-public class GenericUDAFKAnonymity extends AbstractGenericUDAFResolver {
+public class GenericUDAFLDeversity extends AbstractGenericUDAFResolver {
 
   @Override
   public GenericUDAFEvaluator getEvaluator(TypeInfo[] parameters)
           throws SemanticException {
     if(parameters.length == 0) {
-      throw new UDFArgumentException("Argument expected");
+      throw new UDFArgumentException("Arguments expected");
     }
+
     for(int i = 0; i < parameters.length; i++) {
       if(parameters[i].getCategory() != ObjectInspector.Category.PRIMITIVE) {
         throw new UDFArgumentException("Only primitive type arguments are accepted");
       }
     }
-    return new GenericUDAFKAnonymityEvaluator();
+
+    if (((PrimitiveTypeInfo)parameters[0]).getPrimitiveCategory()
+        != PrimitiveObjectInspector.PrimitiveCategory.INT) {
+      throw new UDFArgumentException("The first argument type should be INT");
+    }
+
+    return new GenericUDAFLDeversityEvaluator();
   }
 
 
-  public static class GenericUDAFKAnonymityEvaluator extends GenericUDAFEvaluator {
+  public static class GenericUDAFLDeversityEvaluator extends GenericUDAFEvaluator {
     private IntWritable result;
 
     private ObjectInspector inputKeyOI;
@@ -57,10 +69,15 @@ public class GenericUDAFKAnonymity extends AbstractGenericUDAFResolver {
     static class StringRowInfo {
       private String row_key_;
       private int count_ = 0;
+      private String sensitive_value_;
+      private Map<String, Integer> deversities_;
 
-      public StringRowInfo(String code) {
+      public StringRowInfo(String code, String value) {
         count_ = 1;
         row_key_ = code;
+        sensitive_value_ = value;
+        deversities_ = new HashMap<String, Integer>();
+        deversities_.put(sensitive_value_, 1);
       }
 
       @Override
@@ -87,8 +104,16 @@ public class GenericUDAFKAnonymity extends AbstractGenericUDAFResolver {
         return row_key_;
       }
 
+      public String getSensitiveValue() {
+        return sensitive_value_;
+      }
+
       public Integer getCount() {
-        return count_;
+        return deversities_.size();
+      }
+
+      public HashMap<String, Integer> getDeversities() {
+        return (HashMap<String, Integer>) deversities_;
       }
 
       void setCount(Integer count) {
@@ -98,17 +123,17 @@ public class GenericUDAFKAnonymity extends AbstractGenericUDAFResolver {
       public void increase(Integer cnt) {
         this.count_ += cnt;
       }
-
     }
 
     /** init not completed */
     @Override
-    public ObjectInspector init(Mode m, ObjectInspector[] parameters) throws HiveException {
+    public ObjectInspector init(Mode m, ObjectInspector[] parameters)
+        throws HiveException {
       super.init(m, parameters);
       /*
-       * In partial1, parameters are the inspectors of resultant columns produced by a sql.
+       * In partial1, parameters are the inspectors of resultant columns
+       * produced by a sql.
        */
-
       if (m == Mode.PARTIAL1 || m == Mode.PARTIAL2) {
         inputKeyOI = (JavaStringObjectInspector)
             ObjectInspectorFactory.getReflectionObjectInspector(String.class,
@@ -122,9 +147,9 @@ public class GenericUDAFKAnonymity extends AbstractGenericUDAFResolver {
         if(m == Mode.COMPLETE) {
           return PrimitiveObjectInspectorFactory.writableIntObjectInspector;
         } else {
-          if (parameters.length > 1) throw new UDFArgumentException("init parameters are incorrect");
+          if (parameters.length > 1) throw new UDFArgumentException("Init parameters are incorrect");
           if (!(parameters[0] instanceof StandardMapObjectInspector)) {
-            throw new UDFArgumentException("Init error for merge: parameter is not a standard map object inspector!");
+            throw new UDFArgumentException("Init error for merge: Parameter is not a standard map object inspector!");
           }
 
           internalMergeOI = (StandardMapObjectInspector) parameters[0];
@@ -146,24 +171,38 @@ public class GenericUDAFKAnonymity extends AbstractGenericUDAFResolver {
       HashMap<String, StringRowInfo> freqMap;
 
       void put(Object[] values) {
-        String str = "";
-        for (Object o : values) {
-          str += o;
+        Integer key_columns_num = ((IntWritable) values[0]).get();
+        StringBuilder key_str = new StringBuilder();
+        StringBuilder value_str = new StringBuilder();
+        for (int i = 1; i <= key_columns_num; i++) {
+          key_str.append(values[i]);
+        }
+
+        for (int i = key_columns_num + 1; i < values.length - 1; i++) {
+          value_str.append(values[i]);
         }
 
         // generate an unique identifier for one row
         UDFUIdentifier uid = new UDFUIdentifier();
-        Text txt = uid.evaluate(new Text(str));
-        String code = txt.toString();
+        Text txt = uid.evaluate(new Text(key_str.toString()));
+        String key = txt.toString();
 
-        StringRowInfo sri = new StringRowInfo(code);
+        txt = uid.evaluate(new Text(value_str.toString()));
+        String value = txt.toString();
+
+        StringRowInfo sri = new StringRowInfo(key, value);
         StringRowInfo v = freqMap.get(sri.getRow());
         if(v == null) {
           sri.setCount(1);
           freqMap.put(sri.getRow(), sri);
         } else {
-          sri.increase(v.getCount());
-          freqMap.put(sri.getRow(), sri);
+          // increase deversities_ or not
+          HashMap d = v.getDeversities();
+          if (d.get(sri.getSensitiveValue()) == null) {
+            d.put(sri.getSensitiveValue(), 1);
+          } else {
+            d.putAll(sri.getDeversities());
+          }
         }
       }
 
@@ -201,14 +240,16 @@ public class GenericUDAFKAnonymity extends AbstractGenericUDAFResolver {
 
     @Override
     public void iterate(AggregationBuffer agg, Object[] parameters) throws HiveException {
-      // TODO: Directly call merge(...) to enhance the performance.
+      // TODO: Directly call merge(...) method.
       ((FreqTable) agg).put(parameters);
     }
 
     @Override
     public Object terminatePartial(AggregationBuffer agg) throws HiveException {
       FreqTable ft = (FreqTable) agg;
-      HashMap<String, StringRowInfo> ret = new HashMap<String, StringRowInfo>(ft.freqMap);
+      HashMap<String, StringRowInfo> ret = new HashMap<String, StringRowInfo>();
+      ret.putAll(ft.freqMap);
+      ft.freqMap.clear();
 
       return ret;
     }
@@ -220,20 +261,36 @@ public class GenericUDAFKAnonymity extends AbstractGenericUDAFResolver {
       FreqTable ft = (FreqTable) agg;
 
       for (Entry<Object, Object> e : result.entrySet()) {
+
         Text rowTxt = (Text)((LazyBinaryStruct)e.getValue()).getField(0);
         String row = rowTxt.toString();
         IntWritable count = (IntWritable)((LazyBinaryStruct)e.getValue()).getField(1);
 
-        StringRowInfo sri = new StringRowInfo(row);
+        Text valueTxt = (Text)((LazyBinaryStruct)e.getValue()).getField(2);
+        String value = valueTxt.toString();
+
+        LazyBinaryMap lbm = (LazyBinaryMap)((LazyBinaryStruct)e.getValue()).getField(3);
+        Map m = lbm.getMap();
+
+        StringRowInfo sri = new StringRowInfo(row, value);
         sri.setCount(count.get());
 
         // merge all the patial maps
-        if (ft.freqMap.containsKey(sri.getRow())) {
-            StringRowInfo base = ft.freqMap.get(sri.getRow());
-            sri.increase(base.getCount());
-            ft.freqMap.put(sri.getRow(), sri);
+        StringRowInfo v = ft.freqMap.get(sri.getRow());
+        if(v == null) {
+          sri.setCount(1);
+          ft.freqMap.put(sri.getRow(), sri);
         } else {
-            ft.freqMap.put(sri.getRow(), sri);
+          // increase deversities_ or not
+          HashMap d = v.getDeversities();
+          if (d.get(sri.getSensitiveValue()) == null) {
+            // TODO: Currently, always set the count of sensitive columns
+            // as 1, because it's easy to get L value for a kind of class
+            // through the size the corresponding hash map.
+            d.put(sri.getSensitiveValue(), 1);
+          } else {
+            d.putAll(sri.getDeversities());
+          }
         }
       }
     }
@@ -247,7 +304,6 @@ public class GenericUDAFKAnonymity extends AbstractGenericUDAFResolver {
         return minValue;
       }
     }
-
   }
 
 }
