@@ -14,7 +14,7 @@ import org.apache.hadoop.io.Text;
  * UDFHiding.
  */
 @Description(name = "hiding",
-        value = "_FUNC_(data,value) - hide data with value\n",
+        value = "_FUNC_(data,value) - replace data with value\n",
         extended = "Example:\n")
 public class UDFHiding extends UDF{
   /**

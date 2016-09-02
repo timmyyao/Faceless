@@ -11,14 +11,15 @@ import org.apache.hadoop.io.Text;
  */
 @Description(name = "email",
              value = "_FUNC_(email, mask) - returns the masked value of email\n"
-                + "email - original email string combined with an account name and an email domain\n"
-                + "mask - hide the user name or the email domain",
+                + "email - original email string combined with an account name and an email domain like xx@xx\n"
+                + "mask - hide the user name or the email domain: 1 masked, 0 unmasked",
              extended = "Example:\n")
 public class UDFEmail extends UDF {
   private String evaluate(String email, int mask) {
     String result = "";
     switch(mask) {
       case 0:
+        result = email;
         break;
       case 1:
         result = email.substring(0, email.indexOf('@'));
@@ -27,7 +28,6 @@ public class UDFEmail extends UDF {
         result = email.substring(email.indexOf('@') + 1, email.length());
         break;
       case 3:
-        result = email;
         break;
     }
     return result;

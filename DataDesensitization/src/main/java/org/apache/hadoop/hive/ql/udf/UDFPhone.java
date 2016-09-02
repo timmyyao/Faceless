@@ -11,14 +11,15 @@ import org.apache.hadoop.io.Text;
  */
 @Description(name = "phone",
              value = "_FUNC_(phone, mask) - returns the masked value of phone\n"
-                + "phone - original phone number combined with a district number and a phone number\n"
-                + "mask - hide the district number or the phone number",
+                + "phone - original phone number combined with a district number and a phone number like 001-66666666\n"
+                + "mask - hide the district number or the phone number: 1 masked, 0 unmasked",
              extended = "Example:\n")
 public class UDFPhone extends UDF {
   private String evaluate(String phone, int mask) {
     String result = "";
     switch(mask) {
       case 0:
+        result = phone;
         break;
       case 1:
         result = phone.substring(0, phone.indexOf('-'));
@@ -27,7 +28,6 @@ public class UDFPhone extends UDF {
         result = phone.substring(phone.indexOf('-') + 1, phone.length());
         break;
       case 3:
-        result = phone;
         break;
     }
     return result;

@@ -12,8 +12,8 @@ import org.apache.hadoop.io.Text;
  */
 @Description(name = "mobile",
              value = "_FUNC_(mobile, mask) - returns the masked value of mobile\n"
-                + "mobile - original mobile number combined with a district number and a mobile number\n"
-                + "mask - hide the district number or the mobile number",
+                + "mobile - original 11-digit mobile number combined with three parts \n"
+                + "mask - hide the district number or the mobile number: 1 masked, 0 unmasked",
              extended = "Example:\n")
 public class UDFMobile extends UDF {
   private String evaluate(String mobile, int mask) {

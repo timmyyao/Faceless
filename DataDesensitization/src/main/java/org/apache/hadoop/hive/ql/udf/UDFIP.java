@@ -13,7 +13,7 @@ import org.apache.hadoop.io.Text;
 @Description(name = "ip",
              value = "_FUNC_(ip, mask) - returns the masked value of ip\n"
                 + "ip - original ip like x.x.x.x\n"
-                + "mask - flags to imply hiding or displaying",
+                + "mask - flags to imply hiding or displaying: 1 masked, 0 unmasked",
              extended = "Example:\n")
 public class UDFIP extends UDF {
   private String evaluate(String ip, int mask) {

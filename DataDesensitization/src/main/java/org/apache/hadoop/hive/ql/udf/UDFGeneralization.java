@@ -34,7 +34,7 @@ public class UDFGeneralization extends UDF {
    * Integer version
    */
   public IntWritable evaluate(IntWritable data, IntWritable mode, IntWritable unit) {
-    if (data == null || mode == null || unit == null) {
+    if (data == null) {
       return null;
     }
     double dataVal = data.get();
@@ -42,23 +42,23 @@ public class UDFGeneralization extends UDF {
     int unitVal = unit.get();
     IntWritable result = new IntWritable();
     if (modeVal != 0 && modeVal != 1) {
-      return null;
+      throw new RuntimeException("mode must be 0 or 1");
     }
     if (unitVal <= 0) {
-      return null;
+      throw new RuntimeException("unit must be a positive integer");
     }
-	// calculate the result in double type
-	double resultDouble = evaluate(dataVal,modeVal,unitVal);
-	// type transform with boundary detection
-	if(resultDouble > (double)Integer.MAX_VALUE) {
-	  result.set(Integer.MAX_VALUE);
-	}
-	else if(resultDouble < (double)Integer.MIN_VALUE) {
-	  result.set(Integer.MIN_VALUE);
-	}
-	else {
-	  result.set((int)resultDouble);
-	}
+    // calculate the result in double type
+    double resultDouble = evaluate(dataVal,modeVal,unitVal);
+    // type transform with boundary detection
+    if(resultDouble > (double)Integer.MAX_VALUE) {
+      result.set(Integer.MAX_VALUE);
+    }
+    else if(resultDouble < (double)Integer.MIN_VALUE) {
+      result.set(Integer.MIN_VALUE);
+    }
+    else {
+      result.set((int)resultDouble);
+    }
     return result;
   }
 
@@ -66,7 +66,7 @@ public class UDFGeneralization extends UDF {
    * Double version
    */
   public DoubleWritable evaluate(DoubleWritable data, IntWritable mode, IntWritable unit) {
-    if (data == null || mode == null || unit == null) {
+    if (data == null) {
       return null;
     }
     double dataVal = data.get();
@@ -74,10 +74,10 @@ public class UDFGeneralization extends UDF {
     int unitVal = unit.get();
     DoubleWritable result = new DoubleWritable();
     if (modeVal != 0 && modeVal != 1) {
-      return null;
+      throw new RuntimeException("mode must be 0 or 1");
     }
     if (unitVal <= 0) {
-      return null;
+      throw new RuntimeException("unit must be a positive integer");
     }
     result.set(evaluate(dataVal,modeVal,unitVal));
     return result;
@@ -87,7 +87,7 @@ public class UDFGeneralization extends UDF {
    * Float version
    */
   public FloatWritable evaluate(FloatWritable data, IntWritable mode, IntWritable unit) {
-    if (data == null || mode == null || unit == null) {
+    if (data == null) {
       return null;
     }
     double dataVal = data.get();
@@ -95,10 +95,10 @@ public class UDFGeneralization extends UDF {
     int unitVal = unit.get();
     FloatWritable result = new FloatWritable();
     if (modeVal != 0 && modeVal != 1) {
-      return null;
+      throw new RuntimeException("mode must be 0 or 1");
     }
     if (unitVal <= 0) {
-      return null;
+      throw new RuntimeException("unit must be a positive integer");
     }
     result.set((float)evaluate(dataVal,modeVal,unitVal));
     return result;
@@ -108,7 +108,7 @@ public class UDFGeneralization extends UDF {
    * Byte version
    */
   public ByteWritable evaluate(ByteWritable data, IntWritable mode, IntWritable unit) {
-    if (data == null || mode == null || unit == null) {
+    if (data == null) {
       return null;
     }
     double dataVal = data.get();
@@ -116,23 +116,23 @@ public class UDFGeneralization extends UDF {
     int unitVal = unit.get();
     ByteWritable result = new ByteWritable();
     if (modeVal != 0 && modeVal != 1) {
-      return null;
+      throw new RuntimeException("mode must be 0 or 1");
     }
     if (unitVal <= 0) {
-      return null;
+      throw new RuntimeException("unit must be a positive integer");
     }
     // calculate the result in double type
-	double resultDouble = evaluate(dataVal,modeVal,unitVal);
-	// type transform with boundary detection
-	if(resultDouble > (double)Byte.MAX_VALUE) {
-	  result.set(Byte.MAX_VALUE);
-	}
-	else if(resultDouble < (double)Byte.MIN_VALUE) {
-	  result.set(Byte.MIN_VALUE);
-	}
-	else {
-	  result.set((byte)resultDouble);
-	}
+    double resultDouble = evaluate(dataVal,modeVal,unitVal);
+    // type transform with boundary detection
+    if(resultDouble > (double)Byte.MAX_VALUE) {
+      result.set(Byte.MAX_VALUE);
+    }
+    else if(resultDouble < (double)Byte.MIN_VALUE) {
+      result.set(Byte.MIN_VALUE);
+    }
+    else {
+      result.set((byte)resultDouble);
+    }
     return result;
   }
 
@@ -140,7 +140,7 @@ public class UDFGeneralization extends UDF {
    * Long version
    */
   public LongWritable evaluate(LongWritable data, IntWritable mode, IntWritable unit) {
-    if (data == null || mode == null || unit == null) {
+    if (data == null) {
       return null;
     }
     double dataVal = data.get();
@@ -148,23 +148,23 @@ public class UDFGeneralization extends UDF {
     int unitVal = unit.get();
     LongWritable result = new LongWritable();
     if (modeVal != 0 && modeVal != 1) {
-      return null;
+      throw new RuntimeException("mode must be 0 or 1");
     }
     if (unitVal <= 0) {
-      return null;
+      throw new RuntimeException("unit must be a positive integer");
     }
     // calculate the result in double type
-	double resultDouble = evaluate(dataVal,modeVal,unitVal);
-	// type transform with boundary detection
-	if(resultDouble > (double)Long.MAX_VALUE) {
-	  result.set(Long.MAX_VALUE);
-	}
-	else if(resultDouble < (double)Long.MIN_VALUE) {
-	  result.set(Long.MIN_VALUE);
-	}
-	else {
-	  result.set((long)resultDouble);
-	}
+    double resultDouble = evaluate(dataVal,modeVal,unitVal);
+    // type transform with boundary detection
+    if(resultDouble > (double)Long.MAX_VALUE) {
+      result.set(Long.MAX_VALUE);
+    }
+    else if(resultDouble < (double)Long.MIN_VALUE) {
+      result.set(Long.MIN_VALUE);
+    }
+    else {
+      result.set((long)resultDouble);
+    }
     return result;
   }
 
@@ -172,7 +172,7 @@ public class UDFGeneralization extends UDF {
    * Short version
    */
   public ShortWritable evaluate(ShortWritable data, IntWritable mode, IntWritable unit) {
-    if (data == null || mode == null || unit == null) {
+    if (data == null) {
       return null;
     }
     double dataVal = data.get();
@@ -180,23 +180,23 @@ public class UDFGeneralization extends UDF {
     int unitVal = unit.get();
     ShortWritable result = new ShortWritable();
     if (modeVal != 0 && modeVal != 1) {
-      return null;
+      throw new RuntimeException("mode must be 0 or 1");
     }
     if (unitVal <= 0) {
-      return null;
+      throw new RuntimeException("unit must be a positive integer");
     }
     // calculate the result in double type
-	double resultDouble = evaluate(dataVal,modeVal,unitVal);
-	// type transform with boundary detection
-	if(resultDouble > (double)Short.MAX_VALUE) {
-	  result.set(Short.MAX_VALUE);
-	}
-	else if(resultDouble < (double)Short.MIN_VALUE) {
-	  result.set(Short.MIN_VALUE);
-	}
-	else {
-	  result.set((short)resultDouble);
-	}
+    double resultDouble = evaluate(dataVal,modeVal,unitVal);
+    // type transform with boundary detection
+    if(resultDouble > (double)Short.MAX_VALUE) {
+      result.set(Short.MAX_VALUE);
+    }
+    else if(resultDouble < (double)Short.MIN_VALUE) {
+      result.set(Short.MIN_VALUE);
+    }
+    else {
+      result.set((short)resultDouble);
+    }
     return result;
   }
 
